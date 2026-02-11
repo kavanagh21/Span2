@@ -154,6 +154,11 @@ class MainWindow(QMainWindow):
         self.cmb_font_size.setMaximumWidth(80)
         layout.addRow("Grid Font:", self.cmb_font_size)
 
+        self.cmb_line_thickness = QComboBox()
+        self.cmb_line_thickness.addItems(["1", "2", "3", "4", "5"])
+        self.cmb_line_thickness.setMaximumWidth(80)
+        layout.addRow("Line Width:", self.cmb_line_thickness)
+
         self.chk_x_grid = QCheckBox("Show X grid")
         self.chk_x_grid.setChecked(True)
         layout.addRow(self.chk_x_grid)
@@ -338,6 +343,12 @@ class MainWindow(QMainWindow):
         if font_idx >= 0:
             self.cmb_font_size.setCurrentIndex(font_idx)
 
+        thickness_idx = self.cmb_line_thickness.findText(
+            self.settings.value("line_thickness", "1")
+        )
+        if thickness_idx >= 0:
+            self.cmb_line_thickness.setCurrentIndex(thickness_idx)
+
         # Checkboxes (stored as "true"/"false" strings for cross-platform compat)
         self.chk_x_grid.setChecked(
             self.settings.value("show_x_grid", "true") == "true"
@@ -381,6 +392,7 @@ class MainWindow(QMainWindow):
 
         # Combo boxes
         self.settings.setValue("grid_font_size", self.cmb_font_size.currentText())
+        self.settings.setValue("line_thickness", self.cmb_line_thickness.currentText())
 
         # Checkboxes
         self.settings.setValue(
@@ -480,6 +492,10 @@ class MainWindow(QMainWindow):
             pass
         try:
             self.graph.grid_font_size = int(self.cmb_font_size.currentText())
+        except ValueError:
+            pass
+        try:
+            self.graph.line_thickness = max(1, int(self.cmb_line_thickness.currentText()))
         except ValueError:
             pass
 

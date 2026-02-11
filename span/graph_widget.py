@@ -37,6 +37,7 @@ class GraphWidget(QWidget):
         self.grid_x: int = 25
         self.grid_y: int = 100
         self.grid_font_size: int = 10
+        self.line_thickness: int = 1
 
         # Toggles
         self.show_x_grid: bool = True
@@ -176,7 +177,7 @@ class GraphWidget(QWidget):
                     color = col_up
                 else:
                     color = col_down
-                painter.setPen(QPen(color, 1))
+                painter.setPen(QPen(color, self.line_thickness))
                 painter.drawLine(prev_x, prev_y, px, py)
 
             # Check for inflection markers
