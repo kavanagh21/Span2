@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "SpAN"
+version = "2.0.0"
+description = "Speckle Analysis - Laser Speckle Contrast Imaging data analysis tool"
+authors = [{name = "Dean Kavanagh"}]
+license = {text = "GPL-3.0"}
+requires-python = ">=3.10"
+dependencies = [
+    "PyQt6>=6.5",
+    "numpy>=1.24",
+]
+
+[project.scripts]
+span = "span.main:main"
+
+[tool.setuptools.packages.find]
+include = ["span*"]
