@@ -123,7 +123,8 @@ class GraphWidget(QWidget):
 
         # --- Draw Y grid ---
         if self.show_y_grid and self.grid_y > 0:
-            font = QFont("Segoe UI", self.grid_font_size)
+            font = QFont()
+            font.setPointSize(self.grid_font_size)
             painter.setFont(font)
 
             grid_val = self.y_low - (self.y_low % self.grid_y)
@@ -196,7 +197,8 @@ class GraphWidget(QWidget):
             # Slice number
             if self.draw_slice_number and self.x_step >= 10:
                 painter.setPen(QPen(col_grid_text))
-                font = QFont("Segoe UI", 7)
+                font = QFont()
+                font.setPointSize(7)
                 painter.setFont(font)
                 painter.drawText(px - 5, py - 8, str(i + 1))
 

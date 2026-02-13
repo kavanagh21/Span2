@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
-from PyQt6.QtCore import Qt, QSettings
+from PyQt6.QtCore import Qt, QSettings, QStandardPaths
 from PyQt6.QtGui import QColor, QGuiApplication
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -259,6 +258,8 @@ class MainWindow(QMainWindow):
         btn_row = QHBoxLayout()
         self.btn_copy_data = QPushButton("Copy Data")
         btn_row.addWidget(self.btn_copy_data)
+        self.btn_save_data = QPushButton("Save Data...")
+        btn_row.addWidget(self.btn_save_data)
         self.btn_copy_graph = QPushButton("Copy Graph")
         btn_row.addWidget(self.btn_copy_graph)
         self.btn_save_graph = QPushButton("Save Graph...")
@@ -280,6 +281,7 @@ class MainWindow(QMainWindow):
         self.btn_find_video.clicked.connect(self._on_find_video)
         self.btn_update.clicked.connect(self._update_graph)
         self.btn_copy_data.clicked.connect(self._copy_data_to_clipboard)
+        self.btn_save_data.clicked.connect(self._save_data_to_file)
         self.btn_copy_graph.clicked.connect(self._copy_graph_to_clipboard)
         self.btn_save_graph.clicked.connect(self._save_graph_to_file)
         self.btn_subsample.clicked.connect(self._on_subsample_video)
@@ -582,6 +584,29 @@ class MainWindow(QMainWindow):
         if clipboard:
             clipboard.setText(text)
 
+    def _save_data_to_file(self):
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Inflection Data",
+            os.path.join(
+                QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation),
+                "SpAN Data.csv",
+            ),
+            "CSV Files (*.csv);;Text Files (*.txt);;All Files (*)",
+        )
+        if not filepath:
+            return
+
+        try:
+            with open(filepath, "w", encoding="utf-8", newline="") as f:
+                f.write("Point,Flux,Type\n")
+                for i in range(self.list_inflections.count()):
+                    parts = self.list_inflections.item(i).text().split("\t")
+                    f.write(",".join(parts) + "\n")
+            self.statusBar().showMessage(f"Data saved to {filepath}", 4000)
+        except OSError as e:
+            QMessageBox.warning(self, "Save Error", f"Failed to save data:\n{e}")
+
     def _copy_graph_to_clipboard(self):
         pixmap = self.graph.to_pixmap()
         clipboard = QGuiApplication.clipboard()
@@ -592,7 +617,10 @@ class MainWindow(QMainWindow):
         filepath, selected_filter = QFileDialog.getSaveFileName(
             self,
             "Save Graph Image",
-            os.path.join(str(Path.home()), "Desktop", "SpAN Graph.png"),
+            os.path.join(
+                QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation),
+                "SpAN Graph.png",
+            ),
             "PNG Image (*.png);;JPEG Image (*.jpg);;BMP Image (*.bmp);;All Files (*)",
         )
         if not filepath:
@@ -647,7 +675,8 @@ class MainWindow(QMainWindow):
             return
 
         output_path = os.path.join(
-            str(Path.home()), "Desktop", "SpAN Video.mp4"
+            QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation),
+            "SpAN Video.mp4",
         )
 
         try:
