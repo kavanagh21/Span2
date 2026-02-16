@@ -24,7 +24,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --windowed --name SpAN span/main.py
+          pyinstaller --onefile --windowed --name SpAN --runtime-hook hooks/hook-pyqt6.py --collect-all PyQt6 span/main.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -49,7 +49,13 @@ jobs:
 
       - name: Build .app bundle with PyInstaller
         run: |
-          pyinstaller --windowed --name SpAN span/main.py
+          pyinstaller \
+            --windowed \
+            --name SpAN \
+            --osx-bundle-identifier com.deankavanagh.span \
+            --runtime-hook hooks/hook-pyqt6.py \
+            --collect-all PyQt6 \
+            span/main.py
 
       - name: Zip the .app bundle
         run: |
