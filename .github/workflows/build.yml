@@ -60,11 +60,22 @@ jobs:
             --collect-all PyQt6 \
             span/main.py
 
+      - name: Patch Info.plist
+        run: |
+          plutil -replace CFBundleVersion -string "2.0.0" dist/SpAN.app/Contents/Info.plist
+          plutil -replace CFBundleShortVersionString -string "2.0.0" dist/SpAN.app/Contents/Info.plist
+          plutil -replace CFBundlePackageType -string "APPL" dist/SpAN.app/Contents/Info.plist
+
+      - name: Zip .app to preserve symlinks
+        run: |
+          cd dist
+          zip -r -y SpAN-macOS-arm64.zip SpAN.app
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: SpAN-macOS-arm64
-          path: dist/SpAN.app
+          path: dist/SpAN-macOS-arm64.zip
 
   build-macos-intel:
     runs-on: macos-13
@@ -91,11 +102,22 @@ jobs:
             --collect-all PyQt6 \
             span/main.py
 
+      - name: Patch Info.plist
+        run: |
+          plutil -replace CFBundleVersion -string "2.0.0" dist/SpAN.app/Contents/Info.plist
+          plutil -replace CFBundleShortVersionString -string "2.0.0" dist/SpAN.app/Contents/Info.plist
+          plutil -replace CFBundlePackageType -string "APPL" dist/SpAN.app/Contents/Info.plist
+
+      - name: Zip .app to preserve symlinks
+        run: |
+          cd dist
+          zip -r -y SpAN-macOS-x86_64.zip SpAN.app
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: SpAN-macOS-x86_64
-          path: dist/SpAN.app
+          path: dist/SpAN-macOS-x86_64.zip
 
   merge-macos-universal:
     needs: [build-macos-arm, build-macos-intel]
@@ -105,17 +127,22 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: SpAN-macOS-arm64
-          path: arm64/SpAN.app
+          path: downloads/arm64
 
       - name: Download x86_64 build
         uses: actions/download-artifact@v4
         with:
           name: SpAN-macOS-x86_64
-          path: x86_64/SpAN.app
+          path: downloads/x86_64
+
+      - name: Unzip artifacts
+        run: |
+          cd downloads/arm64 && unzip SpAN-macOS-arm64.zip -d ../../arm64
+          cd ../../downloads/x86_64 && unzip SpAN-macOS-x86_64.zip -d ../../x86_64
 
       - name: Create universal binary
         run: |
-          # Copy ARM64 app as the base
+          # Copy ARM64 app as the base (preserve symlinks)
           cp -R arm64/SpAN.app universal-SpAN.app
 
           # Find all Mach-O binaries and merge them with lipo
@@ -138,12 +165,10 @@ jobs:
 
       - name: Zip universal .app
         run: |
-          zip -r SpAN-macOS.zip universal-SpAN.app -x '*.DS_Store'
-          # Rename app inside zip for cleaner extraction
           mkdir final
           cp -R universal-SpAN.app final/SpAN.app
           cd final
-          zip -r ../SpAN-macOS-universal.zip SpAN.app -x '*.DS_Store'
+          zip -r -y ../SpAN-macOS-universal.zip SpAN.app -x '*.DS_Store'
 
       - name: Upload universal artifact
         uses: actions/upload-artifact@v4
