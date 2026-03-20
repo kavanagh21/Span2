@@ -8,6 +8,7 @@ on:
 
 env:
   PYTHON_VERSION: "3.12"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-windows:
@@ -35,8 +36,8 @@ jobs:
           name: SpAN-Windows
           path: dist/SpAN.exe
 
-  build-macos-arm:
-    runs-on: macos-latest
+  build-macos:
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -69,115 +70,16 @@ jobs:
       - name: Zip .app to preserve symlinks
         run: |
           cd dist
-          zip -r -y SpAN-macOS-arm64.zip SpAN.app
+          zip -r -y SpAN-macOS.zip SpAN.app
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: SpAN-macOS-arm64
-          path: dist/SpAN-macOS-arm64.zip
-
-  build-macos-intel:
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install PyQt6 numpy pyinstaller
-
-      - name: Build .app bundle
-        run: |
-          pyinstaller \
-            --windowed \
-            --name SpAN \
-            --osx-bundle-identifier com.deankavanagh.span \
-            --runtime-hook hooks/hook-pyqt6.py \
-            --collect-all PyQt6 \
-            span/main.py
-
-      - name: Patch Info.plist
-        run: |
-          plutil -replace CFBundleVersion -string "2.0.0" dist/SpAN.app/Contents/Info.plist
-          plutil -replace CFBundleShortVersionString -string "2.0.0" dist/SpAN.app/Contents/Info.plist
-          plutil -replace CFBundlePackageType -string "APPL" dist/SpAN.app/Contents/Info.plist
-
-      - name: Zip .app to preserve symlinks
-        run: |
-          cd dist
-          zip -r -y SpAN-macOS-x86_64.zip SpAN.app
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: SpAN-macOS-x86_64
-          path: dist/SpAN-macOS-x86_64.zip
-
-  merge-macos-universal:
-    needs: [build-macos-arm, build-macos-intel]
-    runs-on: macos-latest
-    steps:
-      - name: Download ARM64 build
-        uses: actions/download-artifact@v4
-        with:
-          name: SpAN-macOS-arm64
-          path: downloads/arm64
-
-      - name: Download x86_64 build
-        uses: actions/download-artifact@v4
-        with:
-          name: SpAN-macOS-x86_64
-          path: downloads/x86_64
-
-      - name: Unzip artifacts
-        run: |
-          cd downloads/arm64 && unzip SpAN-macOS-arm64.zip -d ../../arm64
-          cd ../../downloads/x86_64 && unzip SpAN-macOS-x86_64.zip -d ../../x86_64
-
-      - name: Create universal binary
-        run: |
-          # Copy ARM64 app as the base (preserve symlinks)
-          cp -R arm64/SpAN.app universal-SpAN.app
-
-          # Find all Mach-O binaries and merge them with lipo
-          find arm64/SpAN.app -type f | while read arm_file; do
-            rel_path="${arm_file#arm64/SpAN.app/}"
-            intel_file="x86_64/SpAN.app/${rel_path}"
-            out_file="universal-SpAN.app/${rel_path}"
-
-            if [ -f "$intel_file" ]; then
-              # Check if it's a Mach-O binary
-              if file "$arm_file" | grep -q "Mach-O"; then
-                echo "Merging: $rel_path"
-                lipo -create "$arm_file" "$intel_file" -output "$out_file" 2>/dev/null || cp "$arm_file" "$out_file"
-              fi
-            fi
-          done
-
-          # Re-sign the app (ad-hoc)
-          codesign --force --deep --sign - universal-SpAN.app
-
-      - name: Zip universal .app
-        run: |
-          mkdir final
-          cp -R universal-SpAN.app final/SpAN.app
-          cd final
-          zip -r -y ../SpAN-macOS-universal.zip SpAN.app -x '*.DS_Store'
-
-      - name: Upload universal artifact
         uses: actions/upload-artifact@v4
         with:
           name: SpAN-macOS
-          path: SpAN-macOS-universal.zip
+          path: dist/SpAN-macOS.zip
 
   release:
-    needs: [build-windows, merge-macos-universal]
+    needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
@@ -202,5 +104,5 @@ jobs:
         with:
           files: |
             artifacts/SpAN.exe
-            artifacts/SpAN-macOS-universal.zip
+            artifacts/SpAN-macOS.zip
           generate_release_notes: true
